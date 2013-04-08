@@ -1,0 +1,19 @@
+#!/bin/bash
+set -o errexit
+set -o nounset
+
+# Figure out where this script lives (follow symbolic links).  Emulate GNU readlink -f.
+function readlink_for_osx() {
+    FILENAME="$1"
+    while true; do
+        cd "$( dirname "$FILENAME" )"
+        FILENAME="$( basename "$FILENAME" )"
+        [ -L "$FILENAME" ] || break
+        FILENAME="$( readlink "$FILENAME" )"
+    done
+    echo "$(pwd -P)/$FILENAME"
+}
+JSONPP_DIR="$( dirname "$( readlink_for_osx "${BASH_SOURCE:-$0}" )" )"
+
+java -Xms64m -Xmx64m -jar ${JSONPP_DIR}/target/jsonpp-*.jar "$@"
+
