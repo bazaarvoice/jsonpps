@@ -16,16 +16,22 @@ false
 null
 ```
 
-Unless `--strict` is specified, accepts certain JavaScript syntax such as comments, unquoted keys, single quoted strings.  Example:
+Why yet another JSON pretty printer?
 
-```
-$ echo "{key: 'value' /*inline comment*/} // line comment" | jsonpp
-{
-  "key" : "value"
-}
-```
+* Processes very large JSON files in a memory-efficient way.  Does not read entire files into memory at once.
 
-Preserves the order of key/value pairs in Json objects unlike, for example, `python -mjson.tool`.
+* Preserves the order of key/value pairs in JSON objects unlike, for example, `python -mjson.tool`.
+
+* Accepts input that already has some formatting such as newline characters.
+
+* Unless `--strict` is specified, accepts certain JavaScript syntax such as comments, unquoted keys, single quoted strings.  Example:
+
+    ```
+    $ echo "{key: 'value' /*inline comment*/} // line comment" | jsonpp
+    {
+      "key" : "value"
+    }
+    ```
 
 Uses the [Jackson streaming JSON parser] (http://wiki.fasterxml.com/JacksonHome).
 
