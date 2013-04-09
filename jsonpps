@@ -13,7 +13,7 @@ function readlink_for_osx() {
     done
     echo "$(pwd -P)/$FILENAME"
 }
-JSONPP_DIR="$( dirname "$( readlink_for_osx "${BASH_SOURCE:-$0}" )" )"
+JSONPPS_DIR="$( dirname "$( readlink_for_osx "${BASH_SOURCE:-$0}" )" )"
+JSONPPS_JAR="$( echo "${JSONPPS_DIR}"/target/jsonpps-*.jar )"
 
-java -Xms64m -Xmx64m -jar ${JSONPP_DIR}/target/jsonpp-*.jar "$@"
-
+java -Xms64m -Xmx64m -jar "${JSONPPS_JAR}" "$@"

@@ -1,11 +1,11 @@
-jsonpp
+jsonpps
 ======================================
 
 A streaming JSON pretty printer that can format multi-GB input files.
 
 Pretty prints a whitespace-separated sequence of JSON values.  Example:
 ```
-$ echo 'false 0 "string" [1,2,3] {"a":4} null' | jsonpp
+$ echo 'false 0 "string" [1,2,3] {"a":4} null' | jsonpps
 false
 0
 "string"
@@ -27,7 +27,7 @@ Why yet another JSON pretty printer?
 * Unless `--strict` is specified, accepts certain JavaScript syntax such as comments, unquoted keys, single quoted strings.  Example:
 
     ```
-    $ echo "{key: 'value' /*inline comment*/} // line comment" | jsonpp
+    $ echo "{key: 'value' /*inline comment*/} // line comment" | jsonpps
     {
       "key" : "value"
     }
@@ -39,12 +39,15 @@ Usage
 -----
 
 ```
-$ jsonpp -h
-usage: jsonpp              - pretty print stdin
-       jsonpp -            - pretty print stdin
-       jsonpp <file> ...   - pretty print file(s)
-       -o <file>           - output file
-       --strict            - reject non-conforming json
+$ jsonpps -h
+usage:
+    jsonpps              - pretty print stdin
+    jsonpps -            - pretty print stdin
+    jsonpps <file> ...   - pretty print file(s)
+
+options:
+    -o <file>            - output file
+    --strict             - reject non-conforming json
 ```
 
 Installation
@@ -53,12 +56,12 @@ Installation
 Requires Java and Maven.
 
 ```
-# Download and build streaming jsonpp
-git clone git@github.com:bazaarvoice/jsonpp.git
-cd jsonpp
+# Download and build streaming jsonpps
+git clone git@github.com:bazaarvoice/jsonpps.git
+cd jsonpps
 mvn clean package
 
 # Install
-sudo ln -s $(pwd)/jsonpp /usr/local/bin/
+sudo ln -s $(pwd)/jsonpps /usr/local/bin/
 ```
 
