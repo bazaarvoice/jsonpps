@@ -68,7 +68,5 @@ sudo ln -s $(pwd)/jsonpps /usr/local/bin/
 Or, if you have [Homebrew on OS/X] (http://brew.sh/):
 
 ```
-cd /usr/local
-git pull https://github.com/shawnsmith/homebrew.git master
-brew install jsonpps
+brew install https://raw.github.com/shawnsmith/homebrew/master/Library/Formula/jsonpps.rb
 ```
