@@ -65,3 +65,8 @@ mvn clean package
 sudo ln -s $(pwd)/jsonpps /usr/local/bin/
 ```
 
+Or, if you have [Homebrew on OS/X] (http://brew.sh/):
+
+```
+brew install https://raw.github.com/shawnsmith/homebrew/master/Library/Formula/jsonpps.rb
+```
