@@ -20,7 +20,15 @@
         <developerConnection>scm:git:git@github.com:bazaarvoice/jsonpps.git</developerConnection>
     </scm>
 
-    <name>Streaming Json Pretty Printer</name>
+    <name>JSON Streaming Pretty Printer</name>
+    <url>http://github.com/bazaarvoice/jsonpps</url>
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <properties>
         <jackson.version>2.1.2</jackson.version>
