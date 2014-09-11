@@ -19,11 +19,12 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.Collections;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class PrettyPrintJsonTest {
 
@@ -86,7 +87,8 @@ public class PrettyPrintJsonTest {
         InputStream stdin = new ByteArrayInputStream(input.getBytes("UTF-8"));
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
 
-        PrettyPrintJson.prettyPrint(Collections.singletonList("-"), "-", false, stdin, stdout);
+        File stdInOut = new File("-");
+        PrettyPrintJson.prettyPrint(Collections.singletonList(stdInOut), stdInOut, false, stdin, stdout);
 
         assertEquals(output, stdout.toString("UTF-8"));
     }

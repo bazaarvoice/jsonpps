@@ -20,107 +20,93 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 public class PrettyPrintJson {
+    private static final File STDINOUT = new File("-");
+
     public static void main(String[] args) throws Exception {
         try {
-            List<String> argv = new ArrayList<String>(Arrays.asList(args));
-            if (argv.size() == 1 && ("-h".equals(argv.get(0)) || "--help".equals(argv.get(0)))) {
-                System.err.println("usage:");
-                System.err.println("    jsonpps              - pretty print stdin");
-                System.err.println("    jsonpps -            - pretty print stdin");
-                System.err.println("    jsonpps <file> ...   - pretty print file(s)");
-                System.err.println();
-                System.err.println("options:");
-                System.err.println("    -o <file>            - output file");
-                System.err.println("    --in-place | -i      - modify the original file");
-                System.err.println("    --strict             - reject non-conforming json");
-                System.err.println("    --                   - stop processing options");
+            ArgumentParser parser = ArgumentParsers.newArgumentParser("jsonpps")
+                    .description("A streaming JSON pretty printer that can format multi-GB input files.")
+                    .defaultHelp(true);
+            parser.addArgument("-o", "--out")
+                    .type(Arguments.fileType())
+                    .setDefault(STDINOUT)
+                    .help("output file");
+            parser.addArgument("-i", "--in-place")
+                    .action(Arguments.storeTrue())
+                    .help("modify the original file(s)");
+            parser.addArgument("--strict")
+                    .action(Arguments.storeTrue())
+                    .help("reject non-conforming json");
+            parser.addArgument("in")
+                    .nargs("*")
+                    .type(Arguments.fileType().acceptSystemIn().verifyExists().verifyIsFile().verifyCanRead())
+                    .setDefault(new File[]{STDINOUT})
+                    .help("input file(s)");
+            Namespace ns;
+            try {
+                ns = parser.parseArgs(args);
+            } catch (ArgumentParserException e) {
+                parser.handleError(e);
                 System.exit(2);
+                return;
             }
 
-            // Only arguments before a "--" option may be treated as option flags
-            List<String> options = argv;
-            int lastOptionIndex = argv.indexOf("--");
-            if (lastOptionIndex != -1) {
-                argv.remove(lastOptionIndex);
-                options = argv.subList(0, lastOptionIndex);  // changes to "options" will also modify "argv"
-            }
-
-            // By default, configure the pretty printer to be as permissive as possible.
-            boolean strict = options.remove("--strict");
-
-            // Parse output file command-line argument
-            String outputFilename = "-";
-            int outputOpt = options.indexOf("-o");
-            if (outputOpt != -1) {
-                if (outputOpt + 1 == options.size()) {
-                    System.err.println("error: -o requires a filename argument");
-                    System.exit(2);
-                }
-                outputFilename = options.get(outputOpt + 1);
-                options.subList(outputOpt, outputOpt + 2).clear();
-            }
-
-            // Write to a temp file then rename it over the original file?
-            boolean inPlace = options.remove("--in-place") || options.remove("-i");
-
-            for (String option : options) {
-                if (option.startsWith("-")) {
-                    System.err.println("error: unknown option: " + option);
-                    System.exit(2);
-                }
-            }
-
-            // If no input files, parse stdin
-            List<String> inputFilenames = argv.isEmpty() ? Collections.singletonList("-") : argv;
+            File outputFile = ns.get("out");
+            List<File> inputFiles = ns.getList("in");
+            boolean inPlace = ns.getBoolean("in_place");
+            boolean strict = ns.getBoolean("strict");
 
             if (!inPlace) {
                 // Pretty print all input files to a single output
-                prettyPrint(inputFilenames, outputFilename, strict, System.in, System.out);
+                prettyPrint(inputFiles, outputFile, strict, System.in, System.out);
 
             } else {
                 // Pretty print all input files back to themselves.
-                if (outputOpt != -1) {
+                if (outputFile != STDINOUT) {  // use "!=" not "!.equals()" since default is ok but "-o -" is not.
                     System.err.println("error: -o and --in-place are mutually exclusive");
                     System.exit(2);
                 }
-                if (inputFilenames.isEmpty()) {
+                if (inputFiles.isEmpty()) {
                     System.err.println("error: --in-place requires at least one input file");
                     System.exit(2);
                 }
-                if (inputFilenames.contains("-")) {
+                if (inputFiles.contains(STDINOUT)) {
                     System.err.println("error: --in-place cannot operate on stdin");
                     System.exit(2);
                 }
-                for (String inputFilename : inputFilenames) {
-                    prettyPrint(inputFilename, inputFilename, strict, null, null);
+                for (File inputFile : inputFiles) {
+                    prettyPrint(inputFile, inputFile, strict, null, null);
                 }
             }
 
         } catch (Throwable t) {
-            System.err.println(t);
+            System.err.println(t.toString());
             System.exit(1);
         }
     }
 
-    static void prettyPrint(String inputFilename, String outputFilename, boolean strict,
+    static void prettyPrint(File inputFile, File outputFile, boolean strict,
                             InputStream stdin, OutputStream stdout) throws IOException {
-        prettyPrint(Collections.singleton(inputFilename), outputFilename, strict, stdin, stdout);
+        prettyPrint(Collections.singletonList(inputFile), outputFile, strict, stdin, stdout);
     }
 
-    static void prettyPrint(Collection<String> inputFilenames, String outputFilename, boolean strict,
+    static void prettyPrint(List<File> inputFiles, File outputFile, boolean strict,
                             InputStream stdin, OutputStream stdout)
             throws IOException {
         JsonFactory factory = new JsonFactory();
@@ -137,14 +123,13 @@ public class PrettyPrintJson {
 
         // Open the output stream and create the Json emitter.
         JsonGenerator generator;
-        File tempOutputFile = null, outputFile = null;
-        if ("-".equals(outputFilename)) {
+        File tempOutputFile = null;
+        if (STDINOUT.equals(outputFile)) {
             generator = factory.createGenerator(stdout, JsonEncoding.UTF8);
-        } else if (!caseInsensitiveContains(inputFilenames, outputFilename)) {
-            generator = factory.createGenerator(new File(outputFilename), JsonEncoding.UTF8);
+        } else if (!caseInsensitiveContains(inputFiles, outputFile)) {
+            generator = factory.createGenerator(outputFile, JsonEncoding.UTF8);
         } else {
             // Writing to an input file.. use a temp file to stage the output until we're done.
-            outputFile = new File(outputFilename);
             tempOutputFile = getTemporaryFileFor(outputFile);
             generator = factory.createGenerator(tempOutputFile, JsonEncoding.UTF8);
         }
@@ -153,12 +138,12 @@ public class PrettyPrintJson {
             String newline = System.getProperty("line.separator");
             generator.setPrettyPrinter(new DefaultPrettyPrinter(newline));
 
-            for (String inputFilename : inputFilenames) {
+            for (File inputFile : inputFiles) {
                 JsonParser parser;
-                if ("-".equals(inputFilename)) {
+                if (STDINOUT.equals(inputFile)) {
                     parser = factory.createParser(stdin);
                 } else {
-                    parser = factory.createParser(new File(inputFilename));
+                    parser = factory.createParser(inputFile);
                 }
                 try {
                     while (parser.nextToken() != null) {
@@ -179,9 +164,9 @@ public class PrettyPrintJson {
         }
     }
 
-    private static boolean caseInsensitiveContains(Collection<String> strings1, String string2) {
-        for (String string1 : strings1) {
-            if (string1.equalsIgnoreCase(string2)) {
+    private static boolean caseInsensitiveContains(Collection<File> srcs, File dest) throws IOException {
+        for (File src : srcs) {
+            if (!STDINOUT.equals(src) && src.getCanonicalPath().equalsIgnoreCase(dest.getCanonicalPath())) {
                 return true;
             }
         }
