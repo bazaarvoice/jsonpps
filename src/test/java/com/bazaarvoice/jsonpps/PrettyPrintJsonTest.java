@@ -22,11 +22,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
 public class PrettyPrintJsonTest {
+
+    @Test
+    public void testMultiple() throws Exception {
+        doTest("1 2 3", "1\n2\n3\n");
+    }
 
     @Test
     public void testNull() throws Exception {
@@ -82,13 +86,33 @@ public class PrettyPrintJsonTest {
         doTest("{key1:'value1'}", "{\n  \"key1\" : \"value1\"\n}\n");
     }
 
+    @Test
+    public void testSortKeys() throws Exception {
+        // Verify unsorted behavior
+        doTest("[3,2,1]", "[ 3, 2, 1 ]\n");
+        doTest("{\"b\":2,\"a\":1,\"C\":3}", "{\n  \"b\" : 2,\n  \"a\" : 1,\n  \"C\" : 3\n}\n");
+        doTest("[{\"b\":2,\"a\":1,\"C\":3},true]", "[ {\n  \"b\" : 2,\n  \"a\" : 1,\n  \"C\" : 3\n}, true ]\n");
+
+        // Verify sorted behavior
+        PrettyPrintJson jsonpps = new PrettyPrintJson();
+        jsonpps.setSortKeys(true);
+        doTest("[3,2,1]", "[ 3, 2, 1 ]\n");
+        doTest(jsonpps, "{\"b\":2,\"a\":1,\"C\":3}", "{\n  \"C\" : 3,\n  \"a\" : 1,\n  \"b\" : 2\n}\n");
+        doTest(jsonpps, "[{\"b\":2,\"a\":1,\"C\":3},true]", "[ {\n  \"C\" : 3,\n  \"a\" : 1,\n  \"b\" : 2\n}, true ]\n");
+    }
+
     private void doTest(String input, String output) throws Exception {
+        doTest(new PrettyPrintJson(), input, output);
+    }
+
+    private void doTest(PrettyPrintJson jsonpps, String input, String output) throws Exception {
         output = output.replaceAll("\n", System.getProperty("line.separator"));
         InputStream stdin = new ByteArrayInputStream(input.getBytes("UTF-8"));
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
 
-        File stdInOut = new File("-");
-        PrettyPrintJson.prettyPrint(Collections.singletonList(stdInOut), stdInOut, false, stdin, stdout);
+        jsonpps.setStdin(stdin);
+        jsonpps.setStdout(stdout);
+        jsonpps.prettyPrint(new File("-"), new File("-"));
 
         assertEquals(output, stdout.toString("UTF-8"));
     }
