@@ -46,8 +46,10 @@ import static com.fasterxml.jackson.core.JsonTokenId.ID_START_OBJECT;
 public class PrettyPrintJson {
     private static final File STDINOUT = new File("-");
 
+    private int flatten;
     private boolean sortKeys;
     private boolean strict;
+    private boolean wrap;
     private InputStream stdin = System.in;
     private OutputStream stdout = System.out;
 
@@ -60,15 +62,26 @@ public class PrettyPrintJson {
                     .type(Arguments.fileType())
                     .setDefault(STDINOUT)
                     .help("output file");
+            parser.addArgument("--flatten")
+                    .metavar("N")
+                    .type(Integer.class)
+                    .setDefault(0)
+                    .help("flatten the top-N levels of object/array structure");
             parser.addArgument("-i", "--in-place")
                     .action(Arguments.storeTrue())
                     .help("modify the original file(s)");
             parser.addArgument("-S", "--sort-keys")
                     .action(Arguments.storeTrue())
-                    .help("output objects with keys in sorted order. this increases memory requirements since objects must be buffered in memory.");
+                    .help("emit objects with keys in sorted order. this increases memory requirements since objects must be buffered in memory.");
             parser.addArgument("--strict")
                     .action(Arguments.storeTrue())
                     .help("reject non-conforming json");
+            parser.addArgument("--wrap")
+                    .action(Arguments.storeTrue())
+                    .help("wrap all output in a json array");
+            parser.addArgument("--unwrap")
+                    .action(Arguments.storeTrue())
+                    .help("flatten the top level of object/array structure");
             parser.addArgument("in")
                     .nargs("*")
                     .type(Arguments.fileType().acceptSystemIn().verifyExists().verifyIsFile().verifyCanRead())
@@ -87,8 +100,13 @@ public class PrettyPrintJson {
             File outputFile = ns.get("out");
             List<File> inputFiles = ns.getList("in");
             boolean inPlace = ns.getBoolean("in_place");
+            jsonpp.setFlatten(ns.getInt("flatten"));
             jsonpp.setSortKeys(ns.getBoolean("sort_keys"));
             jsonpp.setStrict(ns.getBoolean("strict"));
+            jsonpp.setWrap(ns.getBoolean("wrap"));
+            if (ns.getBoolean("unwrap")) {
+                jsonpp.setFlatten(1);
+            }
 
             if (!inPlace) {
                 // Pretty print all input files to a single output
@@ -120,12 +138,20 @@ public class PrettyPrintJson {
         }
     }
 
+    public void setFlatten(int flatten) {
+        this.flatten = flatten;
+    }
+
     public void setSortKeys(boolean sortKeys) {
         this.sortKeys = sortKeys;
     }
 
     public void setStrict(boolean strict) {
         this.strict = strict;
+    }
+
+    public void setWrap(boolean wrap) {
+        this.wrap = wrap;
     }
 
     public void setStdin(InputStream stdin) {
@@ -177,6 +203,10 @@ public class PrettyPrintJson {
             String newline = System.getProperty("line.separator");
             generator.setPrettyPrinter(new DefaultPrettyPrinter(newline));
 
+            if (wrap) {
+                generator.writeStartArray();
+            }
+
             for (File inputFile : inputFiles) {
                 JsonParser parser;
                 if (STDINOUT.equals(inputFile)) {
@@ -186,11 +216,15 @@ public class PrettyPrintJson {
                 }
                 try {
                     while (parser.nextToken() != null) {
-                        copyCurrentStructure(parser, mapper, generator);
+                        copyCurrentStructure(parser, mapper, 0, generator);
                     }
                 } finally {
                     parser.close();
                 }
+            }
+
+            if (wrap) {
+                generator.writeEndArray();
             }
 
             generator.writeRaw(newline);
@@ -203,7 +237,7 @@ public class PrettyPrintJson {
         }
     }
 
-    private void copyCurrentStructure(JsonParser parser, ObjectMapper mapper, JsonGenerator generator) throws IOException {
+    private void copyCurrentStructure(JsonParser parser, ObjectMapper mapper, int depth, JsonGenerator generator) throws IOException {
         // Avoid using the mapper to parse the entire input until we absolutely must.  This allows pretty
         // printing huge top-level arrays (that wouldn't fit in memory) containing smaller objects (that
         // individually do fit in memory) where the objects are printed with sorted keys.
@@ -214,31 +248,41 @@ public class PrettyPrintJson {
         }
         int id = t.id();
         if (id == ID_FIELD_NAME) {
-            generator.writeFieldName(parser.getCurrentName());
+            if (depth > flatten) {
+                generator.writeFieldName(parser.getCurrentName());
+            }
             t = parser.nextToken();
             id = t.id();
         }
         switch (id) {
             case ID_START_OBJECT:
-                if (sortKeys) {
+                if (sortKeys && depth >= flatten) {
                     // Load the entire object in memory so we can sort its keys and serialize it back out.
                     mapper.writeValue(generator, parser.readValueAs(Map.class));
                 } else {
                     // Don't load the whole object into memory.  Copy it in a memory-efficient streaming fashion.
-                    generator.writeStartObject();
-                    while (parser.nextToken() != JsonToken.END_OBJECT) {
-                        copyCurrentStructure(parser, mapper, generator);
+                    if (depth >= flatten) {
+                        generator.writeStartObject();
                     }
-                    generator.writeEndObject();
+                    while (parser.nextToken() != JsonToken.END_OBJECT) {
+                        copyCurrentStructure(parser, mapper, depth + 1, generator);
+                    }
+                    if (depth >= flatten) {
+                        generator.writeEndObject();
+                    }
                 }
                 break;
             case ID_START_ARRAY:
                 // Don't load the whole array into memory.  Copy it in a memory-efficient streaming fashion.
-                generator.writeStartArray();
-                while (parser.nextToken() != JsonToken.END_ARRAY) {
-                    copyCurrentStructure(parser, mapper, generator);
+                if (depth >= flatten) {
+                    generator.writeStartArray();
                 }
-                generator.writeEndArray();
+                while (parser.nextToken() != JsonToken.END_ARRAY) {
+                    copyCurrentStructure(parser, mapper, depth + 1, generator);
+                }
+                if (depth >= flatten) {
+                    generator.writeEndArray();
+                }
                 break;
             default:
                 generator.copyCurrentEvent(parser);

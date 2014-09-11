@@ -64,11 +64,13 @@ public class PrettyPrintJsonTest {
     @Test
     public void testArray() throws Exception {
         doTest("[1,2,\"three\"]", "[ 1, 2, \"three\" ]\n");
+        doTest("[{\"b\":2,\"a\":1,\"C\":3},true]", "[ {\n  \"b\" : 2,\n  \"a\" : 1,\n  \"C\" : 3\n}, true ]\n");
     }
 
     @Test
     public void testObject() throws Exception {
         doTest("{\"key1\":\"value1\",\"key2\":2}", "{\n  \"key1\" : \"value1\",\n  \"key2\" : 2\n}\n");
+        doTest("{\"b\":2,\"a\":1,\"C\":3}", "{\n  \"b\" : 2,\n  \"a\" : 1,\n  \"C\" : 3\n}\n");
     }
 
     @Test
@@ -88,17 +90,40 @@ public class PrettyPrintJsonTest {
 
     @Test
     public void testSortKeys() throws Exception {
-        // Verify unsorted behavior
-        doTest("[3,2,1]", "[ 3, 2, 1 ]\n");
-        doTest("{\"b\":2,\"a\":1,\"C\":3}", "{\n  \"b\" : 2,\n  \"a\" : 1,\n  \"C\" : 3\n}\n");
-        doTest("[{\"b\":2,\"a\":1,\"C\":3},true]", "[ {\n  \"b\" : 2,\n  \"a\" : 1,\n  \"C\" : 3\n}, true ]\n");
-
-        // Verify sorted behavior
         PrettyPrintJson jsonpps = new PrettyPrintJson();
         jsonpps.setSortKeys(true);
         doTest("[3,2,1]", "[ 3, 2, 1 ]\n");
         doTest(jsonpps, "{\"b\":2,\"a\":1,\"C\":3}", "{\n  \"C\" : 3,\n  \"a\" : 1,\n  \"b\" : 2\n}\n");
         doTest(jsonpps, "[{\"b\":2,\"a\":1,\"C\":3},true]", "[ {\n  \"C\" : 3,\n  \"a\" : 1,\n  \"b\" : 2\n}, true ]\n");
+    }
+
+    @Test
+    public void testFlattenArray() throws Exception {
+        PrettyPrintJson jsonpps = new PrettyPrintJson();
+        jsonpps.setFlatten(2);
+
+        doTest(jsonpps, "[3,2,[1],[[0]]]", "3\n2\n1\n[ 0 ]\n");
+    }
+
+    @Test
+    public void testFlattenObject() throws Exception {
+        PrettyPrintJson jsonpps = new PrettyPrintJson();
+
+        jsonpps.setFlatten(1);
+        doTest(jsonpps, "{a:1}", "1\n");
+        doTest(jsonpps, "{a:1,b:{c:2}}", "1\n{\n  \"c\" : 2\n}\n");
+
+        jsonpps.setFlatten(2);
+        jsonpps.setSortKeys(true); // Sorting should only occur at nesting depths that aren't flattened.
+        doTest(jsonpps, "{a:{b:{c:{d:1,E:2}}},F:2,g:[3,4]}", "{\n  \"c\" : {\n    \"E\" : 2,\n    \"d\" : 1\n  }\n}\n2\n3\n4\n");
+    }
+
+    @Test
+    public void testWrap() throws Exception {
+        PrettyPrintJson jsonpps = new PrettyPrintJson();
+        jsonpps.setWrap(true);
+
+        doTest(jsonpps, "1 2 3 [4]", "[ 1, 2, 3, [ 4 ] ]\n");
     }
 
     private void doTest(String input, String output) throws Exception {
