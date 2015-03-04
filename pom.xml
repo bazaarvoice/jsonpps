@@ -32,7 +32,7 @@
     </licenses>
 
     <properties>
-        <jackson.version>2.4.2</jackson.version>
+        <jackson.version>2.5.1</jackson.version>
         <commons-io.commons-io.version>2.4</commons-io.commons-io.version>
     </properties>
 
