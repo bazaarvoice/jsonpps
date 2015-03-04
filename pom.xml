@@ -33,6 +33,7 @@
 
     <properties>
         <jackson.version>2.4.2</jackson.version>
+        <commons-io.commons-io.version>2.4</commons-io.commons-io.version>
     </properties>
 
     <dependencies>
@@ -58,6 +59,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.commons-io.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -15,19 +15,9 @@
  */
 package com.bazaarvoice.jsonpps;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
+import static com.fasterxml.jackson.core.JsonTokenId.ID_FIELD_NAME;
+import static com.fasterxml.jackson.core.JsonTokenId.ID_START_ARRAY;
+import static com.fasterxml.jackson.core.JsonTokenId.ID_START_OBJECT;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,9 +29,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.fasterxml.jackson.core.JsonTokenId.ID_FIELD_NAME;
-import static com.fasterxml.jackson.core.JsonTokenId.ID_START_ARRAY;
-import static com.fasterxml.jackson.core.JsonTokenId.ID_START_OBJECT;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class PrettyPrintJson {
     private static final File STDINOUT = new File("-");
@@ -201,7 +203,7 @@ public class PrettyPrintJson {
         try {
             // Separate top-level objects by a newline in the output.
             String newline = System.getProperty("line.separator");
-            generator.setPrettyPrinter(new DefaultPrettyPrinter(newline));
+            generator.setPrettyPrinter(getPrettyPrinter(newline));
 
             if (wrap) {
                 generator.writeStartArray();
@@ -307,5 +309,12 @@ public class PrettyPrintJson {
         File tempFile = new File(file.getParentFile(), "_" + file.getName() + "." + randomSuffix);
         tempFile.deleteOnExit();
         return tempFile;
+    }
+    
+    private PrettyPrinter getPrettyPrinter(String lf) {
+		DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter(lf);
+		prettyPrinter.indentArraysWith(new Indentation());
+		prettyPrinter.indentObjectsWith(new Indentation());
+		return prettyPrinter;
     }
 }
