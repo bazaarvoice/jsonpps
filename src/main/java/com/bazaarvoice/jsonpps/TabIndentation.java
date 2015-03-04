@@ -23,11 +23,11 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter.NopIndenter;
 
 @SuppressWarnings("serial")
-public class Indentation extends NopIndenter {
+public class TabIndentation extends NopIndenter {
 	private final static String SYS_LF;
 	final static int TAB_COUNT = 64;
 	final static char[] TABS = new char[TAB_COUNT];
-	public static final Indentation instance = new Indentation();
+	public static final TabIndentation instance = new TabIndentation();
 	protected final String _lf;
 
 	static {
@@ -44,19 +44,19 @@ public class Indentation extends NopIndenter {
 		Arrays.fill(TABS, '	');
 	}
 
-	public Indentation() {
+	public TabIndentation() {
 		this(SYS_LF);
 	}
 
-	public Indentation(String lf) {
+	public TabIndentation(String lf) {
 		_lf = lf;
 	}
 
-	public Indentation withLinefeed(String lf) {
+	public TabIndentation withLinefeed(String lf) {
 		if(lf.equals(_lf)) {
 			return this;
 		}
-		return new Indentation(lf);
+		return new TabIndentation(lf);
 	}
 
 	@Override

@@ -152,6 +152,14 @@ public class PrettyPrintJsonTest {
     	}
     	String filename = method+(index != null ? "-"+index : "")+".output.json";
     	String output = IOUtils.toString(getClass().getResourceAsStream("/"+filename));
+    	jsonpps.setTabs(true);
+    	doTest(jsonpps, input, output);
+    	output = output.replaceAll("\t", "  ");
+    	jsonpps.setTabs(false);
+    	doTest(jsonpps, input, output);
+    }
+    
+    private void doTest(PrettyPrintJson jsonpps, String input, String output) throws Exception {
         InputStream stdin = new ByteArrayInputStream(input.getBytes("UTF-8"));
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
 

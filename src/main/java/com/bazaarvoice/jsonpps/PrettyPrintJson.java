@@ -18,6 +18,7 @@ package com.bazaarvoice.jsonpps;
 import static com.fasterxml.jackson.core.JsonTokenId.ID_FIELD_NAME;
 import static com.fasterxml.jackson.core.JsonTokenId.ID_START_ARRAY;
 import static com.fasterxml.jackson.core.JsonTokenId.ID_START_OBJECT;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +53,7 @@ public class PrettyPrintJson {
     private boolean sortKeys;
     private boolean strict;
     private boolean wrap;
+    private boolean tabs;
     private InputStream stdin = System.in;
     private OutputStream stdout = System.out;
 
@@ -84,6 +86,9 @@ public class PrettyPrintJson {
             parser.addArgument("--unwrap")
                     .action(Arguments.storeTrue())
                     .help("flatten the top level of object/array structure");
+            parser.addArgument("--tabs")
+		    		.action(Arguments.storeTrue())
+		            .help("use tabs for indentation instead of spaces.  Default is spaces");
             parser.addArgument("in")
                     .nargs("*")
                     .type(Arguments.fileType().acceptSystemIn().verifyExists().verifyIsFile().verifyCanRead())
@@ -106,6 +111,7 @@ public class PrettyPrintJson {
             jsonpp.setSortKeys(ns.getBoolean("sort_keys"));
             jsonpp.setStrict(ns.getBoolean("strict"));
             jsonpp.setWrap(ns.getBoolean("wrap"));
+            jsonpp.setTabs(ns.getBoolean("tabs"));
             if (ns.getBoolean("unwrap")) {
                 jsonpp.setFlatten(1);
             }
@@ -162,6 +168,10 @@ public class PrettyPrintJson {
 
     public void setStdout(OutputStream stdout) {
         this.stdout = stdout;
+    }
+
+    public void setTabs(boolean tabs) {
+        this.tabs = tabs;
     }
 
     public void prettyPrint(File inputFile, File outputFile) throws IOException {
@@ -313,8 +323,13 @@ public class PrettyPrintJson {
     
     private PrettyPrinter getPrettyPrinter(String lf) {
 		DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter(lf);
-		prettyPrinter.indentArraysWith(new Indentation());
-		prettyPrinter.indentObjectsWith(new Indentation());
+		if(tabs) {
+			prettyPrinter.indentArraysWith(new TabIndentation());
+			prettyPrinter.indentObjectsWith(new TabIndentation());
+		}
+		else {
+			prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
+		}
 		return prettyPrinter;
     }
 }
