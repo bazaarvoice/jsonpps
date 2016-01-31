@@ -5,8 +5,10 @@
 *.iml
 
 # Eclipse Files
-.classpath
-.project
+/.classpath
+/.project
+/.settings
+/bin/
 
 # Build outputs
 target/
