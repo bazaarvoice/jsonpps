@@ -1,7 +1,7 @@
 jsonpps
 ======================================
 
-A streaming JSON pretty printer that can format multi-GB input files.
+A streaming JSON pretty printer that can format multi-GB input files.  This repo is being archived and made read-only on August 30th, 2021 because it is dormant.
 
 Pretty prints a whitespace-separated sequence of JSON values.  Example:
 ```
